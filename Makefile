@@ -18,7 +18,7 @@ $(NAME):
 	gcc  -o $(NAME) $(SRC) -lm
 
 tests_run:
-	gcc -o unit_test src/prop_law.c bonus/tests/*.c --coverage -lcriterion -lm
+	gcc -o test src/prop_law.c bonus/tests/*.c --coverage -lcriterion -lm
 	./test
 
 clean:
