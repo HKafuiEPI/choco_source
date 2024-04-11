@@ -1,48 +1,58 @@
-env:
-  MIRROR_URL: git@github.com:EpitechPromo2028/B-CPE-210-COT-2-1-solostumper03-juao.aifa.git
-  EXECUTABLES: 202unsold
+name: Chocolatine Workflow
 
-
-name: chocolatine
-on: 
+on:
   push:
-    branches-ignore:
-      - 'ga-ignore-'
+    branches:
+      - '*'
+      - '!ga-ignore-*'
   pull_request:
-    branches-ignore:
-      - 'ga-ignore-'
+    branches:
+      - '*'
+
+env:
+  MIRROR_URL: 
+  EXECUTABLES: 
+
 jobs:
   check_coding_style:
+    name: Check Coding Style
     runs-on: ubuntu-latest
-    container:
-      image:  ghcr.io/epitech/coding-style-checker:latest
     steps:
-      - uses: actions/checkout@v3
-      - run: check.sh $(pwd) $(pwd)
-      - run: |
-          CODING_STYLE_ERRORS=$(cat $(pwd)/coding-style-reports.log)
-          for ERRORS in $CODING_STYLE_ERRORS; do
-            array=(`echo $ERRORS | sed 's/:/\n/g'`)
-            echo "::error file=${array[1]#./},title=${array[3]#./} coding style errors detected: ${array[2]#./}::${array[4]#./}"
-          done
-          if [[ -n $CODING_STYLE_ERRORS ]]
-          then
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Coding Style Checker
+        run: docker run --rm -v $(pwd):/workspace ghcr.io/epitech/coding-style-checker:latest check.sh $(pwd) $(pwd)
+
+      - name: Display Coding Style Errors
+        run: |
+          input="coding-style-reports.log"
+          if [ - s "coding-style-reports.log"]; then
+            while IFS= read -r -a line; do
+              IFS=':' read -ra ligne <<< "$line"
+              echo "::error title=${ligne[2]#./} coding style error,file=${ligne[0]},line=${ligne[1]}::${ligne[3]}"
+            done < "$input"
             exit 1
-          else
-            echo No coding style errors detected
           fi
+
   check_program_compilation:
+    name: Checking Program Compilation
     runs-on: ubuntu-latest
-    container:
-      image: epitechcontent/epitest-docker
     steps:
-      - uses: actions/checkout@v3
-      - run: make
-        timeout-minutes: 2
-      - run: make clean
-      - run: |
-          for i in "${EXECUTABLES}"; do
-            if [[ ! -x "$i" ]]; then
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Launch Make
+        run: make
+
+      - name: Clean Build
+        run: make clean
+
+      - name: Verify Executables
+        run: |
+          for exe in $(echo $EXECUTABLES | tr "," "\n"); do
+            if [ ! -x "$exe" ]; then
+              echo "$exe does not exist or is not executable"
               exit 1
             fi
           done
