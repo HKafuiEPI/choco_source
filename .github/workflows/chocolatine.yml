@@ -1,86 +1,48 @@
-name: chocolatine
+env:
+  MIRROR_URL: git@github.com:EpitechPromo2028/B-CPE-210-COT-2-1-solostumper03-juao.aifa.git
+  EXECUTABLES: fazzbizz
 
-on:
+name: chocolatine
+on: 
   push:
     branches-ignore:
-      "ga-ignore-*"
+      - 'ga-ignore-'
   pull_request:
     branches-ignore:
-      "ga-ignore-*"
-
-
-env:
-  MIRROR_URL: "git@github.com:EpitechPromo2028/B-DOP-200-COT-2-1-chocolatine-julio.dahou.git"
-  EXECUTABLES: "202unsold"
-
+      - 'ga-ignore-'
 jobs:
   check_coding_style:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/epitech/coding-style-checker:latest
-
+      image:  ghcr.io/epitech/coding-style-checker:latest
     steps:
       - uses: actions/checkout@v3
-        run: |
-          check.sh $(pwd) $(pwd)
-          if grep -q "." "coding-style-reports.log"; then exit 1; else echo "No coding style issues found!"; fi/*.c
-
+      - run: check.sh $(pwd) $(pwd)
+      - run: |
+          CODING_STYLE_ERRORS=$(cat $(pwd)/coding-style-reports.log)
+          for ERRORS in $CODING_STYLE_ERRORS; do
+            array=(`echo $ERRORS | sed 's/:/\n/g'`)
+            echo "::error file=${array[1]#./},title=${array[3]#./} coding style errors detected: ${array[2]#./}::${array[4]#./}"
+          done
+          if [[ -n $CODING_STYLE_ERRORS ]]
+          then
+            exit 1
+          else
+            echo No coding style errors detected
+          fi
   check_program_compilation:
+    needs: check_coding_style
     runs-on: ubuntu-latest
     container:
       image: epitechcontent/epitest-docker
-
     steps:
       - uses: actions/checkout@v3
-
-      - name: Compile program
-        run: make
+      - run: make
         timeout-minutes: 2
-
-      - name: Clean generated files
-        run: make clean
-
-      - name: Check executables
-        run: |
-          for executable in $EXECUTABLES; do
-            if [[!-x "$executable" ]]; then
-              echo "Missing or non-executable executable: $executable"
-              exit 84
+      - run: make clean
+      - run: |
+          for i in "${EXECUTABLES}"; do
+            if [[ ! -x "$i" ]]; then
+              exit 1
             fi
           done
-        
-  run_tests:
-    runs-on: ubuntu-latest
-    container:
-      image: epitechcontent/epitest-docker
-
-    timeout-minutes: 2
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Run tests
-        run: make tests_run
-
-  push_to_mirror:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Push to mirror
-        env:
-          MIRROR_URL: "git@github.com:EpitechPromo2028/B-DOP-200-COT-2-1-chocolatine-julio.dahou.git"
-          GIT_SSH_PRIVATE_KEY: "SHA256:1XK9SZpibwROjQA0VcgZQ6x1pPCaAueESXKcfPh4ivo"
-        run: |
-          # Configure Git with SSH key
-          mkdir ~/.ssh
-          echo "SHA256:1XK9SZpibwROjQA0VcgZQ6x1pPCaAueESXKcfPh4ivo" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-
-          # Push to mirror repository
-          git remote add mirror $MIRROR_URL
-          git push mirror --all
