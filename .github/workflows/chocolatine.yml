@@ -1,58 +1,74 @@
-name: Chocolatine Workflow
+name: Chocolatine
+
+env:
+  MIRROR_URL: git@github.com:EpitechPromo2028/B-PSU-200-COT-2-1-minishell1-aurel.dossou-kohi.git
+  EXECUTABLES: 202unsold
 
 on:
   push:
-    branches:
-      - '*'
-      - '!ga-ignore-*'
+    branches-ignore:
+      - 'ga-ignore-'
   pull_request:
-    branches:
-      - '*'
-
-env:
-  MIRROR_URL: 
-  EXECUTABLES: 
+    branches-ignore:
+      - 'ga-ignore-'
 
 jobs:
+
   check_coding_style:
     name: Check Coding Style
     runs-on: ubuntu-latest
+    container: ghcr.io/epitech/coding-style-checker:latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Run Coding Style Checker
-        run: docker run --rm -v $(pwd):/workspace ghcr.io/epitech/coding-style-checker:latest check.sh $(pwd) $(pwd)
-
-      - name: Display Coding Style Errors
-        run: |
-          input="coding-style-reports.log"
-          if [ - s "coding-style-reports.log"]; then
-            while IFS= read -r -a line; do
-              IFS=':' read -ra ligne <<< "$line"
-              echo "::error title=${ligne[2]#./} coding style error,file=${ligne[0]},line=${ligne[1]}::${ligne[3]}"
-            done < "$input"
-            exit 1
-          fi
+    - uses: actions/checkout@v3
+    - name: Run Coding Style Check
+      run: check.sh $(pwd) $(pwd)
+    - name: Annotate Coding Style Errors
+      run: |
+        cat coding-style-reports.log
+      if: ${{ always() }}
 
   check_program_compilation:
-    name: Checking Program Compilation
+    name: Check Program Compilation
+    needs: check_coding_style
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker
+    steps:
+    - uses: actions/checkout@v3
+    - name: Make
+      run: make
+      timeout-minutes: 2
+    - name: Make Clean
+      run: make clean
+    - name: Check Executables
+      run: |
+        for exe in $(echo ${{ env.EXECUTABLES }} | sed 's/,/ /g'); do
+          if [ ! -x $exe ]; then
+            echo "Executable $exe is missing or not executable"
+            exit 1
+          fi
+        done
+
+  run_tests:
+    name: Run Tests
+    needs: check_program_compilation
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker
+    steps:
+    - uses: actions/checkout@v3
+    - name: Make Tests Run
+      run: make tests_run
+      timeout-minutes: 2
+
+  push_to_mirror:
+    name: Push to Mirror Repository
+    needs: run_tests
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Launch Make
-        run: make
-
-      - name: Clean Build
-        run: make clean
-
-      - name: Verify Executables
-        run: |
-          for exe in $(echo $EXECUTABLES | tr "," "\n"); do
-            if [ ! -x "$exe" ]; then
-              echo "$exe does not exist or is not executable"
-              exit 1
-            fi
-          done
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: pixta-dev/repository-mirroring-action@v1
+      with:
+        target: ${{ env.MIRROR_URL }}
+        ssh_private_key:  ${{ secrets.GIT_SSH_PRIVATE_KEY }}
