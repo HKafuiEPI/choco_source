@@ -1,6 +1,14 @@
-name: CHOCOLATINE
+on:
+  push:
+    branches-ignore:
+      - 'ga-ignore-*'
+  pull_request:
+    branches-ignore:
+      - 'ga-ignore-*'
 
-on: [ push, pull_request ]
+env:
+  MIRROR_URL: "git@github.com:EpitechPromo2028/B-DOP-200-COT-2-1-chocolatine-patriko.dagbe.git"
+  EXECUTABLES: "mypaint"
 
 jobs:
   check_coding_style:
@@ -8,6 +16,52 @@ jobs:
     container:
       image: ghcr.io/epitech/coding-style-checker:latest
     steps:
-      - uses: actions/checkout@v3
-      - name: coding_style_checker
-        run: check.sh $(pwd) $(pwd)
+      - uses: actions/checkout@v4
+      - id: check_coding_style
+        name: checking coding-style and display errors
+        run: |
+          check.sh $(pwd) $(pwd)
+          input="coding-style-reports.log"
+          while IFS= read -r line; do
+            echo "::error$line"
+          done < "$input"
+
+  check_program_compilation:
+    needs: check_coding_style
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker:latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: check_program_compilation
+        name: checking the compilation of the program
+        run: make
+        timeout-minutes: 2
+      - name: cleaning the repo
+        run: make clean
+
+  run_tests:
+    needs: check_program_compilation
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker:latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: run_tests
+        name: check unit_tests program
+        run: make tests_run
+        timeout-minutes: 2
+
+  push_to_mirror:
+    needs: run_tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pixta-dev/repository-mirroring-action@v1
+        with:
+          target_repo_url:
+            ${{env.MIRROR_URL}}
+          ssh_private_key:
+            ${{secrets.GIT_SSH_PRIVATE_KEY}}
