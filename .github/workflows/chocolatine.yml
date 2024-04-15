@@ -1,74 +1,32 @@
 name: Chocolatine
 
-env:
-  MIRROR_URL: git@github.com:EpitechPromo2028/B-PSU-200-COT-2-1-minishell1-aurel.dossou-kohi.git
-  EXECUTABLES: 202unsold
-
-on:
+on: 
   push:
     branches-ignore:
-      - 'ga-ignore-'
+      - " ga-ignore-"
   pull_request:
     branches-ignore:
-      - 'ga-ignore-'
+      - " ga-ignore-"
 
+env:
+  EXECUTABLE: setting_up
 jobs:
-
   check_coding_style:
-    name: Check Coding Style
     runs-on: ubuntu-latest
     container: ghcr.io/epitech/coding-style-checker:latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Run Coding Style Check
-      run: check.sh $(pwd) $(pwd)
-    - name: Annotate Coding Style Errors
-      run: |
-        cat coding-style-reports.log
-      if: ${{ always() }}
+      - name: check coding-s
+        uses: actions/checkout@v4.1.1
 
-  check_program_compilation:
-    name: Check Program Compilation
-    needs: check_coding_style
-    runs-on: ubuntu-latest
-    container: epitechcontent/epitest-docker
-    steps:
-    - uses: actions/checkout@v3
-    - name: Make
-      run: make
-      timeout-minutes: 2
-    - name: Make Clean
-      run: make clean
-    - name: Check Executables
-      run: |
-        for exe in $(echo ${{ env.EXECUTABLES }} | sed 's/,/ /g'); do
-          if [ ! -x $exe ]; then
-            echo "Executable $exe is missing or not executable"
+      - name: run c-s
+        run: check.sh $(pwd) $(pwd)
+
+      - name: display c-s
+        run: cat coding-style-reports.log
+
+      - name: vérif
+        run: |
+          if grep -q "." coding-style-reports.log
+          then
             exit 1
           fi
-        done
-
-  run_tests:
-    name: Run Tests
-    needs: check_program_compilation
-    runs-on: ubuntu-latest
-    container: epitechcontent/epitest-docker
-    steps:
-    - uses: actions/checkout@v3
-    - name: Make Tests Run
-      run: make tests_run
-      timeout-minutes: 2
-
-  push_to_mirror:
-    name: Push to Mirror Repository
-    needs: run_tests
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - uses: pixta-dev/repository-mirroring-action@v1
-      with:
-        target: ${{ env.MIRROR_URL }}
-        ssh_private_key:  ${{ secrets.GIT_SSH_PRIVATE_KEY }}
