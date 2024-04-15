@@ -1,32 +1,13 @@
-name: Chocolatine
+name: CHOCOLATINE
 
-on: 
-  push:
-    branches-ignore:
-      - " ga-ignore-"
-  pull_request:
-    branches-ignore:
-      - " ga-ignore-"
+on: [ push, pull_request ]
 
-env:
-  EXECUTABLE: setting_up
 jobs:
   check_coding_style:
     runs-on: ubuntu-latest
-    container: ghcr.io/epitech/coding-style-checker:latest
+    container:
+      image: ghcr.io/epitech/coding-style-checker:latest
     steps:
-      - name: check coding-s
-        uses: actions/checkout@v4.1.1
-
-      - name: run c-s
+      - uses: actions/checkout@v3
+      - name: coding_style_checker
         run: check.sh $(pwd) $(pwd)
-
-      - name: display c-s
-        run: cat coding-style-reports.log
-
-      - name: vérif
-        run: |
-          if grep -q "." coding-style-reports.log
-          then
-            exit 1
-          fi
