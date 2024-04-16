@@ -60,7 +60,7 @@ jobs:
           for exe in $(echo $EXECUTABLES | tr ',' '\n'); do
             test -x "$exe" || exit 1
           done
-    needs: check_coding_style
+    # needs: check_coding_style
 
   run_tests:
     container:
@@ -74,7 +74,7 @@ jobs:
         run: |
           make tests_run || exit 1
         timeout-minutes: 2
-    needs: check_program_compilation
+    #needs: check_program_compilation
 
   push_to_mirror:
     runs-on: ubuntu-latest
