@@ -1,91 +1,64 @@
-name: Chocolatine
+name: chocolatine
 
 on:
-  push:
-    branches-ignore:
-      - 'ga-ignore*'
-  
-  pull_request:
+   push:
+      branches-ignore:
+         - "ga-ignore-*"
+   pull_request:
+      branches-ignore:
+         - "ga-ignore-*"
 
 env:
-  MIRROR_URL: "git@github.com:EpitechPromo2028/B-DOP-200-COT-2-1-chocolatine-jean-marc.kottin.git"
-  EXECUTABLES: "202unsold"
+   MIRROR_URL: "git@github.com:EpitechPromo2028/B-MUL-100-COT-1-1-myhunter-solene.amoussou.git"
+   EXECUTABLE: "myhunter"
 
 jobs:
-  check_coding_style:
-    container:
-      image: ghcr.io/epitech/coding-style-checker:latest
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4.1.2
+   check_coding_style:
+      runs-on: ubuntu-latest 
+      container:
+         image: "ghcr.io/epitech/coding-style-checker:latest"
+      steps:
+         - name: coding_style_job
+           uses: actions/checkout@v4
 
-      - name: Run Coding Style Check
-        run: |
-          echo "::group::run-coding-style"
-          check.sh $(pwd) $(pwd) || true
-          echo "::endgroup::"
+         - name: coding_style_checker
+           run: check.sh $(pwd) $(pwd)
 
-      - name: Check Coding Style Results
-        if: always()
-        run: |
-          echo "::group::run-coding-style"
-          if [ -s coding-style-reports.log ]; then
-            while IFS=: read -r file_path line_number error_type error_code; do
-              echo "::error file=$file_path,line=$line_number::$error_code"
-            done < coding-style-reports.log
-            exit 1
-          fi
-          echo "::endgroup::"
+   check_program_compilation:
+      runs-on: ubuntu_latest
+      steps:
+         - name: check_program_compilation_job
+           uses: actions/checkout@v4
 
-  check_program_compilation:
-    container:
-      image: epitechcontent/epitest-docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.2
-
-      - name: Compile with make
-        run: |
-          make || exit 1
-        timeout-minutes: 2
-
-      - name: Clean up with make clean
-        run: |
-          make clean || exit 1
-
-      - name: Verify executables
-        run: |
-          for exe in $(echo $EXECUTABLES | tr ',' '\n'); do
-            test -x "$exe" || exit 1
-          done
-    # needs: check_coding_style
-
-  run_tests:
-    container:
-      image: epitechcontent/epitest-docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.2
-
-      - name: Run Tests
-        run: |
-          make tests_run || exit 1
-        timeout-minutes: 2
-    #needs: check_program_compilation
-
-  push_to_mirror:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.1.2
-
-      - name: Push to Mirror Repository
-        uses: pixta-dev/repository-mirroring-action@v1
-        with:
-          target_repo_url: ${{ env.MIRROR_URL }}
-          ssh_private_key: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
-    needs: run_tests
+         - name: check_program_compilation_checker
+           run: make
+      
+   run_tests:
+      needs: [check_program_compilation]
+      name: "Runs tests with criterion"
+      runs-on: ubuntu-latest
+      container:
+         image: epitechcontent/epitest-docker:latest
+        
+      steps:
+         - uses: actions/checkout@v3
+         - id: run_tests
+           run: make tests_run
+           timeout-minutes: 2
+        
+   push_to_mirror:
+      needs: [run_tests]
+      if: ${{ github.event_name == 'push' }}
+      name: "Push all files to mirror specified"
+      runs-on: ubuntu-latest
+        
+      steps:
+         - uses: actions/checkout@v2
+           with:
+            fetch-depth: 0
+         - uses: pixta-dev/repository-mirroring-action@v1
+           with:
+               target_repo_url:
+                  ${{ env.MIRROR_URL }}
+               ssh_private_key:
+                  ${{ secrets.GIT_SSH_PRIVATE_KEY }}
