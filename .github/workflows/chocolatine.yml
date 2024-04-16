@@ -1,62 +1,91 @@
-name: my_chocol
-on: 
-  push:
-  branches-ignore:
-    - 'ga-ignor-*'
-  pull_request:
-    branches-ignore:
-      - 'ga-ignore-*'
-    
-  env:
-    MIRROR_URL: "git@github.com:EpitechPromo2028/B-DOP-200-COT-2-1-chocolatine-eben-ezer.klobo.git"
-    EXECUTABLES: "my_sokoban"
-jobs:
-    check_coding_style:
-    run-on: ubuntu-latest
-    image: ghcr.io/epitech/coding-style-checker:latest
-    steps:
-      run: check.sh $(pwd) $(pwd)
-    - if [ -f coding-style-reports.log ]; then while IFS= read -r ligne; do
-        fichier=$(echo "$ligne" | cut -d':' -f1);
-        numero_ligne=$(echo "$ligne" | cut -d':' -f2);
-        message_erreur=$(echo "$ligne" | cut -d':' -f3-);
-        echo "::error file=$fichier,line=$numero_ligne::Erreur de style de codage : $message_erreur";
-      done < coding-style-reports.log;
-    ficodage
-  allow_failure: false
+name: Chocolatine
 
+on:
+  push:
+    branches-ignore:
+      - 'ga-ignore*'
+  
+  pull_request:
+
+env:
+  MIRROR_URL: "git@github.com:EpitechPromo2028/B-DOP-200-COT-2-1-chocolatine-jean-marc.kottin.git"
+  EXECUTABLES: "jm"
+
+jobs:
   check_coding_style:
-  run-on: ubuntu-latest
-  image: ghcr.io/epitech/coding-style-checker:latest
-  steps:
-    - check.sh $(pwd) $(pwd)
-    - if [ -f coding-style-reports.log ]; then while IFS= read -r ligne; do
-        fichier=$(echo "$ligne" | cut -d':' -f1);
-        numero_ligne=$(echo "$ligne" | cut -d':' -f2);
-        message_erreur=$(echo "$ligne" | cut -d':' -f3-);
-        echo "::error file=$fichier,line=$numero_ligne::Erreur de style de codage : $message_erreur";
-      done < coding-style-reports.log;
-    fi
-  allow_failure: false
+    container:
+      image: ghcr.io/epitech/coding-style-checker:latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4.1.2
+
+      - name: Run Coding Style Check
+        run: |
+          echo "::group::run-coding-style"
+          check.sh $(pwd) $(pwd) || true
+          echo "::endgroup::"
+
+      - name: Check Coding Style Results
+        if: always()
+        run: |
+          echo "::group::run-coding-style"
+          if [ -s coding-style-reports.log ]; then
+            while IFS=: read -r file_path line_number error_type error_code; do
+              echo "::error file=$file_path,line=$line_number::$error_code"
+            done < coding-style-reports.log
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  check_program_compilation:
+    container:
+      image: epitechcontent/epitest-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.2
+
+      - name: Compile with make
+        run: |
+          make || exit 1
+        timeout-minutes: 2
+
+      - name: Clean up with make clean
+        run: |
+          make clean || exit 1
+
+      - name: Verify executables
+        run: |
+          for exe in $(echo $EXECUTABLES | tr ',' '\n'); do
+            test -x "$exe" || exit 1
+          done
+    needs: check_coding_style
 
   run_tests:
-  run-on: ubuntu-latest
-  image: epitechcontent/epitest-docker
-  steps:
-3
+    container:
+      image: epitechcontent/epitest-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.2
 
-
-    - timeout 2m make tests_run
+      - name: Run Tests
+        run: |
+          make tests_run || exit 1
+        timeout-minutes: 2
+    needs: check_program_compilation
 
   push_to_mirror:
-  run-on: ubuntu-latest
-  image: alpine/git
-  steps:
-    - mkdir -p ~/.ssh/
-    - echo "$GIT_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - ssh-keyscan -H $(echo $MIRROR_URL | awk -F[@/] '{print $3}') >> ~/.ssh/known_hosts
-    - git remote add mirror $MIRROR_URL
-    - git push --mirror mirror
-  only:
-    - push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.2
+
+      - name: Push to Mirror Repository
+        uses: pixta-dev/repository-mirroring-action@v1
+        with:
+          target_repo_url: ${{ env.MIRROR_URL }}
+          ssh_private_key: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
+    needs: run_tests
