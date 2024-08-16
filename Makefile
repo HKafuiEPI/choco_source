@@ -9,8 +9,8 @@ SRC	=	src/prop_law.c	\
 		src/printer.c	\
 		src/main.c		\
 		src/check_error.c\
-202unsold
-NAME	=	
+
+NAME	=	202unsold
 
 all:	$(NAME)
 
