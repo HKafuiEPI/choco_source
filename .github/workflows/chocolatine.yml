@@ -10,7 +10,7 @@ on:
 
 env:
   MIRROR_URL: "git@github.com:HKafuiEPI/miroir.git"
-  EXECUTABLES: "202unsold"
+  EXECUTABLES: 202unsold
 
 jobs:
   check_coding_style:
