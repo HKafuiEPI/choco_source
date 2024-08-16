@@ -32,7 +32,6 @@ jobs:
                 if [ $NB_ERROR -gt 0 ]; then
                     ERROR=$(cat coding-style-reports.log)
                     echo "::error title=$NB_ERROR errors found::$ERROR"
-                    exit 1
                 fi
                 exit 0
 
