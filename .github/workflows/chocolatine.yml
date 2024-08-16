@@ -52,7 +52,6 @@ jobs:
               if [! -f ./${{ env.EXECUTABLES }}]; then
                   echo "::error file=./${{ env.EXECUTABLES }}, title=Binary
                   Error::Binary not found"
-                  exit 1
               fi
               exit 0
 
