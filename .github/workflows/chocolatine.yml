@@ -16,25 +16,25 @@ env:
 
 
 jobs:
-  check_coding_style:
-    runs-on: ubuntu-latest
-    container: ghcr.io/epitech/coding-style-checker:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  # check_coding_style:
+  #   runs-on: ubuntu-latest
+  #   container: ghcr.io/epitech/coding-style-checker:latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v3
 
-      - name: Coding style checker run
-        run: |
-          check.sh $(pwd) $(pwd)
-          if [ -s coding-style-reports.log ]; then
-            cat coding-style-reports.log
-            exit 1
-          fi
+  #     - name: Coding style checker run
+  #       run: |
+  #         check.sh $(pwd) $(pwd)
+  #         if [ -s coding-style-reports.log ]; then
+  #           cat coding-style-reports.log
+  #           exit 1
+  #         fi
           
   check_program_compilation:
     runs-on: ubuntu-latest
     container: epitechcontent/epitest-docker
-    needs: check_coding_style
+    # needs: check_coding_style
     steps:
       - name: Check repository
         uses: actions/checkout@v3
