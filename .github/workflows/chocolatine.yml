@@ -9,10 +9,10 @@ on:
       - 'ga-ignore-*'
 
 env:
-  MIRROR_URL: git@github.com:HKafuiEPI/choco_source.git
-  EXECUTABLES: 202unsold
-  BANNED_FUNCTIONS: printf,gets,strcpy,strcat,scanf
-  LIBRAIRIES: <stdio.h>,<unistd.h>
+  MIRROR_URL: "git@github.com:HKafuiEPI/choco_source.git"
+  EXECUTABLES: "202unsold"
+  BANNED_FUNCTIONS: "printf,gets,strcpy,strcat,scanf"
+  LIBRAIRIES: "<stdio.h>,<unistd.h>"
 
 jobs:
   check_coding_style:
