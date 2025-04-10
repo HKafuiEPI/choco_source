@@ -10,7 +10,7 @@ on:
 
 env:
   MIRROR_URL: "git@github.com:HKafuiEPI/choco_source.git"
-  EXECUTABLES: "202unsold"
+  EXECUTABLES: "202"
   BANNED_FUNCTIONS: "printf,gets,strcpy,strcat,scanf"
   LIBRAIRIES: "<stdio.h>,<unistd.h>"
 
