@@ -1,89 +1,56 @@
-name: Chocolatine tester
-
+name: learn-github-actions
+run-name: ${{ github.actor }} is a devops and gaming enthusiast
 on:
-  push:
-      branches-ignore: [ga-ignore-*]
-  pull_request:
-      branches-ignore: [ga-ignore-*]
-
+    push:
+        branches-ignore:
+            - ga-ignore-*
+    pull_request:
+        branches-ignore:
+            - ga-ignore-*
+    
 env:
-  MIRROR_URL: "git@github.com:HKafuiEPI/miroir.git"
-  EXECUTABLES: "202unsold"
-
+  EXECUTABLES: mysh
+  MIRROR_URL: git@github.com:Sedjro-du07/mirror-repo.git
 jobs:
-
-    coding-style:
-        name: coding_style_check
-        runs-on: ubuntu-latest
-        container:
-            image: ghcr.io/epitech/coding-style-checker:latest
-
-        steps:
-
-            - name: Checkout my repo
-              uses: actions/checkout@master
-
-            - name: Run coding-style checker
-              run: check.sh $(pwd) $(pwd)
-
-            - name: Report banana output
-              run: |
-                NB_ERROR=$(cat coding-style-reports.log | wc -l)
-                if [ $NB_ERROR -gt 0 ]; then
-                    ERROR=$(cat coding-style-reports.log)
-                    echo "::error title=$NB_ERROR errors found::$ERROR"
-                fi
-                exit 0
-
-    compile:
-        name: programm_compilation
-        runs-on: ubuntu-latest
-        steps:
-
-          - name: Checkout my repo
-            uses: actions/checkout@master
-
-          - name: Compile reposiory
-            run: make
-
-          - name: Check binary presence
-            run: |
-              if [! -f ./${{ env.EXECUTABLES }}]; then
-                  echo "::error file=./${{ env.EXECUTABLES }}, title=Binary
-                  Error::Binary not found"
-              fi
-              exit 0
-
-    run-tests:
-        name: run_tests
-        runs-on: ubuntu-latest
-        container: epitechcontent/epitest-docker:latest
-        needs: [compile, coding-style]
-
-        steps:
-
-            - name: Checkout my repo
-              uses: actions/checkout@master
-
-            - name: Compile tests binaries
-              run: make tests_run
-
-
-    push_to_mirror:
-      runs-on: ubuntu-latest
-      name: push_to_mirror
-      needs: [compile, coding-style, run-tests]
-      if: github.event_name == 'push'
-
-      steps:
-
-          - name: Checkout my repO
-            uses: actions/checkout@master
-            with:
-              fetch-depth: 0
-
-          - name: push_to_mirror
-            uses: pixta-dev/repository-mirroring-action@v1
-            with:
-              target_repo_url: ${{ env.MIRROR_URL }}
-              ssh_private_key: ${{ secrets.GIT_SSH_PRIVATE_KEY }}
+  check_coding_style:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/epitech/coding-style-checker:latest
+    steps:
+      - name: coding_style
+        uses: actions/checkout@v4
+      - run: |
+             check.sh $(pwd) $(pwd)
+             if [ -s coding-style-reports.log ];
+             then
+                cat coding-style-reports.log > $GITHUB_OUTPUT
+                exit 1
+             fi
+  check_program_compilation:
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker
+    timeout-minutes: 2
+    needs: check_coding_style
+    steps:
+      - name: compiler
+        uses: actions/checkout@v4
+      - run: |
+             make
+             if [-f !$(EXECUTABLES)];
+             then
+                exit 1
+             fi
+      - name: cleaner
+        uses: actions/checkout@v4
+      - run: make clean
+  run_tests:
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker
+    timeout-minutes: 2
+    needs: check_program_compilation
+    steps:
+      - name: tester
+        uses: actions/checkout@v4
+      - run: make tests_run
