@@ -12,7 +12,7 @@ on:
     
 env:
   MIRROR_URL: ${{ secrets.MIRROR_URL }}
-  EXECUTABLES: ""
+  EXECUTABLES: "cqq"
  
 jobs:
   coding_style:
