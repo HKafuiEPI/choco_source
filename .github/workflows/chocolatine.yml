@@ -1,53 +1,83 @@
-name: Chocolatine Workflow
-
+name: Chocolatine_Workflow
 on:
   push:
     branches-ignore:
-      - ga-ignore-*
+    - "ga-ignore-*"
   pull_request:
     branches-ignore:
-      - ga-ignore-*
-
+    - "ga-ignore-*"
 env:
-  MIRROR_URL: ${{ secrets.MIRROR_URL }}
-  EXECUTABLES: "my_hunter"
+  EXECUTABLES: 'mysh'
 
 jobs:
   check_coding_style:
-    name: "Check Coding Style"
     runs-on: ubuntu-latest
     container: ghcr.io/epitech/coding-style-checker:latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout GH repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
 
-      - name: Run Coding Style Checker
-        run: check.sh $(pwd) $(pwd)
+    - name: Run coding-style checker script
+      run: check.sh $(pwd) $(pwd)
 
-      - name: Display Errors
-        if: failure()
-        run: cat coding-style-reports.log && exit 1
+    - name: Display coding style errors as annotations if any errors
+      id: annotations
+      run: |
+        if [ ! -f coding-style-reports.log ]; then
+          echo "No coding style report found."
+          exit 1
+        fi
+
+        NB_ERRORS=$(cat coding-style-reports.log | wc -l)
+        if [ $NB_ERRORS -ge 1 ]; then
+          while IFS= read -r line
+          do
+            FILE=$(echo $line | cut -d ':' -f1)
+            LINE=$(echo $line | cut -d ':' -f2)
+            ERROR=$(echo $line | cut -d ':' -f3-)
+            FILE=$(realpath --relative-to=$(pwd) $FILE)
+            echo "::error file=$FILE,line=$LINE,title=$NB_ERRORS coding style errors found::$ERROR"
+          done < coding-style-reports.log
+          exit 1
+        fi
+        exit 0
 
   check_program_compilation:
-    name: "Check Program Compilation"
     runs-on: ubuntu-latest
-    container: epitechcontent/epitest-docker
+    container: epitechcontent/epitest-docker:latest
     needs: check_coding_style
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout GH repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
 
-      - name: Compile Project
-        run: timeout 120 make
+    - name: Compile the project
+      run: make
+      timeout-minutes: 2
 
-      - name: Clean Compilation
-        run: make clean
+    - name: Check if the executable exists
+      run: |
+        if [ ! -f ${{ env.EXECUTABLES }} ]; then
+          echo "The executable ${{ env.EXECUTABLES }} does not exist."
+        exit 1
+        fi
 
-      - name: Verify Executables
-        run: |
-          for exe in $(echo $EXECUTABLES | tr ',' ' '); do
-            if [ ! -x "$exe" ]; then
-              echo "::error file=$exe::Executable $exe is missing or not executable"
-              exit 1
-            fi
-          done
+    - name: Clean the project
+      run: make fclean
+
+  run_tests:
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker
+    needs: check_program_compilation
+    steps:
+    - name: Checkout GH repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{github.repository}}
+
+    - name: Launch unit_tests
+      run: make tests_run
+      timeout-minutes: 2
