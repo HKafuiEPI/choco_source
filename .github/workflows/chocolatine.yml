@@ -1,4 +1,4 @@
-name: Chocolatine Controler
+name: Chocolatine Workflow
 
 on:
   push:
@@ -8,112 +8,59 @@ on:
     branches-ignore:
       - 'ga-ignore-*'
 
-env:
-  MIRROR_URL: "git@github.com:HKafuiEPI/choco_source.git"
-  EXECUTABLES: "202"
-  BANNED_FUNCTIONS: "printf,gets,strcpy,strcat,scanf"
-  LIBRAIRIES: "<stdio.h>,<unistd.h>"
-
 jobs:
-  # check_coding_style:
-  #   runs-on: ubuntu-latest
-  #   container: ghcr.io/epitech/coding-style-checker:latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-        
-  #     - name: Run coding style check
-  #       run: check.sh $(pwd) $(pwd)
-        
-  #     - name: Display errors
-  #       run: |
-  #         if [ -sf coding-style-reports.log ]; then
-  #           while IFS= read -r line; do
-  #             echo "::error file=$(echo $line | cut -d: -f1),line=$(echo $line | cut -d: -f2)::$(echo $line | cut -d: -f3-)"
-  #           done < coding-style-reports.log
-  #           exit 1
-  #         fi
+  check_coding_style:
+    name: Check Coding Style
+    runs-on: ubuntu-latest
+    container: ghcr.io/epitech/coding-style-checker:latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with: 
+          fetch-depth: 1
+      - name: Launch of the coding style
+        run: check.sh $(pwd) $(pwd)
+      - name: Verify coding-style errors
+        run: |
+          if [ -s coding-style-reports.log ]; then
+            while read -r line; do
+              echo "::error file=${{ github.event.pull_request.head.sha }}::${line}"
+            done < coding-style-reports.log
+            exit 1
+          fi
 
-  # check_banned_functions:
-  #   runs-on: ubuntu-latest
-  #   needs: check_coding_style
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-        
-  #     - name: Scan for banned functions
-  #       run: |
-  #         grep -rnE "\b(${{ env.BANNED_FUNCTIONS }})\b" --include=\*.c || true
-  #         if grep -rnE "\b(${{ env.BANNED_FUNCTIONS }})\b" --include=\*.c; then
-  #           echo "::error::Banned function usage detected"
-  #           exit 1
-  #         fi
-
-  # check_program_compilation:
-  #   runs-on: ubuntu-latest
-  #   container: epitechcontent/epitest-docker
-  #   needs: check_banned_functions
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-        
-  #     - name: Compile project
-  #       run: timeout 120 make
-        
-  #     - name: Clean project
-  #       run: make clean
-        
-  #     - name: Verify executables
-  #       run: |
-  #         for file in ${{ env.EXECUTABLES }}; do
-  #           if [ ! -x "$file" ]; then
-  #             echo "::error file=$file::Executable missing or not executable"
-  #             exit 1
-  #           fi
-  #         done
-
-  # check_libraries:
-  #   runs-on: ubuntu-latest
-  #   needs: check_program_compilation
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #     - name: Verify compiled libraries
-  #       run: |
-  #         IFS=',' read -ra LIBS <<< ${{ env.LIBRAIRIES }}
-  #         for lib in "${LIBS[@]}"; do
-  #           if [ ! -f "$lib" ]; then
-  #             echo "::error file=$lib::Library missing"
-  #             exit 1
-  #           fi
-  #         done
-
-  run_tests:
+  check_program_compilation:
+    name: Check Program Compilation
     runs-on: ubuntu-latest
     container: epitechcontent/epitest-docker
-    # needs: check_libraries
+    needs: check_coding_style
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        
-      - name: Run tests
-        run: timeout 120 make tests_run
+        with:
+          fetch-depth: 1
+      - name: Launch of compilation
+        run: timeout 120 make
+      - name: Verify executable
+        run: |
+          if [[ ! -x "$exe" ]]; then
+            echo "::error file=${exe}::Executable not found"
+            exit 1
+          fi
+      - name: Clean object files
+        run: make clean
+      - name: Clean repo
+        run: make fclean
 
-  # push_to_mirror:
-  #   runs-on: ubuntu-latest
-  #   needs: run_tests
-  #   if: github.event_name == 'push'
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-        
-  #     - name: Setup SSH Key
-  #       run: |
-  #         mkdir -p ~/.ssh
-  #         echo "$GIT_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-  #         chmod 600 ~/.ssh/id_rsa
-          
-  #     - name: Push to mirror repository
-  #       run: |
-  #         git remote add mirror ${{ env.MIRROR_URL }}
-  #         git push --mirror mirror
+  run_tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    container: epitechcontent/epitest-docker
+    needs: check_program_compilation
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Launch unit-tests
+        run: timeout 120 make tests_run
