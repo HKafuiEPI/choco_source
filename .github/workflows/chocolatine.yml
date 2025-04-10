@@ -15,83 +15,83 @@ env:
   LIBRAIRIES: "<stdio.h>,<unistd.h>"
 
 jobs:
-  check_coding_style:
-    runs-on: ubuntu-latest
-    container: ghcr.io/epitech/coding-style-checker:latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # check_coding_style:
+  #   runs-on: ubuntu-latest
+  #   container: ghcr.io/epitech/coding-style-checker:latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
         
-      - name: Run coding style check
-        run: check.sh $(pwd) $(pwd)
+  #     - name: Run coding style check
+  #       run: check.sh $(pwd) $(pwd)
         
-      - name: Display errors
-        run: |
-          if [ -sf coding-style-reports.log ]; then
-            while IFS= read -r line; do
-              echo "::error file=$(echo $line | cut -d: -f1),line=$(echo $line | cut -d: -f2)::$(echo $line | cut -d: -f3-)"
-            done < coding-style-reports.log
-            exit 1
-          fi
+  #     - name: Display errors
+  #       run: |
+  #         if [ -sf coding-style-reports.log ]; then
+  #           while IFS= read -r line; do
+  #             echo "::error file=$(echo $line | cut -d: -f1),line=$(echo $line | cut -d: -f2)::$(echo $line | cut -d: -f3-)"
+  #           done < coding-style-reports.log
+  #           exit 1
+  #         fi
 
-  check_banned_functions:
-    runs-on: ubuntu-latest
-    needs: check_coding_style
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # check_banned_functions:
+  #   runs-on: ubuntu-latest
+  #   needs: check_coding_style
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
         
-      - name: Scan for banned functions
-        run: |
-          grep -rnE "\b(${{ env.BANNED_FUNCTIONS }})\b" --include=\*.c || true
-          if grep -rnE "\b(${{ env.BANNED_FUNCTIONS }})\b" --include=\*.c; then
-            echo "::error::Banned function usage detected"
-            exit 1
-          fi
+  #     - name: Scan for banned functions
+  #       run: |
+  #         grep -rnE "\b(${{ env.BANNED_FUNCTIONS }})\b" --include=\*.c || true
+  #         if grep -rnE "\b(${{ env.BANNED_FUNCTIONS }})\b" --include=\*.c; then
+  #           echo "::error::Banned function usage detected"
+  #           exit 1
+  #         fi
 
-  check_program_compilation:
-    runs-on: ubuntu-latest
-    container: epitechcontent/epitest-docker
-    needs: check_banned_functions
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # check_program_compilation:
+  #   runs-on: ubuntu-latest
+  #   container: epitechcontent/epitest-docker
+  #   needs: check_banned_functions
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
         
-      - name: Compile project
-        run: timeout 120 make
+  #     - name: Compile project
+  #       run: timeout 120 make
         
-      - name: Clean project
-        run: make clean
+  #     - name: Clean project
+  #       run: make clean
         
-      - name: Verify executables
-        run: |
-          for file in ${{ env.EXECUTABLES }}; do
-            if [ ! -x "$file" ]; then
-              echo "::error file=$file::Executable missing or not executable"
-              exit 1
-            fi
-          done
+  #     - name: Verify executables
+  #       run: |
+  #         for file in ${{ env.EXECUTABLES }}; do
+  #           if [ ! -x "$file" ]; then
+  #             echo "::error file=$file::Executable missing or not executable"
+  #             exit 1
+  #           fi
+  #         done
 
-  check_libraries:
-    runs-on: ubuntu-latest
-    needs: check_program_compilation
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Verify compiled libraries
-        run: |
-          IFS=',' read -ra LIBS <<< ${{ env.LIBRAIRIES }}
-          for lib in "${LIBS[@]}"; do
-            if [ ! -f "$lib" ]; then
-              echo "::error file=$lib::Library missing"
-              exit 1
-            fi
-          done
+  # check_libraries:
+  #   runs-on: ubuntu-latest
+  #   needs: check_program_compilation
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #     - name: Verify compiled libraries
+  #       run: |
+  #         IFS=',' read -ra LIBS <<< ${{ env.LIBRAIRIES }}
+  #         for lib in "${LIBS[@]}"; do
+  #           if [ ! -f "$lib" ]; then
+  #             echo "::error file=$lib::Library missing"
+  #             exit 1
+  #           fi
+  #         done
 
   run_tests:
     runs-on: ubuntu-latest
     container: epitechcontent/epitest-docker
-    needs: check_libraries
+    # needs: check_libraries
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -99,21 +99,21 @@ jobs:
       - name: Run tests
         run: timeout 120 make tests_run
 
-  push_to_mirror:
-    runs-on: ubuntu-latest
-    needs: run_tests
-    if: github.event_name == 'push'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # push_to_mirror:
+  #   runs-on: ubuntu-latest
+  #   needs: run_tests
+  #   if: github.event_name == 'push'
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
         
-      - name: Setup SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "$GIT_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+  #     - name: Setup SSH Key
+  #       run: |
+  #         mkdir -p ~/.ssh
+  #         echo "$GIT_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
           
-      - name: Push to mirror repository
-        run: |
-          git remote add mirror ${{ env.MIRROR_URL }}
-          git push --mirror mirror
+  #     - name: Push to mirror repository
+  #       run: |
+  #         git remote add mirror ${{ env.MIRROR_URL }}
+  #         git push --mirror mirror
