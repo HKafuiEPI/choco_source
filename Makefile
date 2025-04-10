@@ -31,6 +31,3 @@ fclean:	clean
 	@find . -name "*.gcda" -type f -delete
 
 re: fclean all
-
-auteur:
-	echo $(USER) > auteur
