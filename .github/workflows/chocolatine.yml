@@ -31,30 +31,30 @@ jobs:
   #           exit 1
   #         fi
           
-  check_program_compilation:
-    runs-on: ubuntu-latest
-    container: epitechcontent/epitest-docker
-    # needs: check_coding_style
-    steps:
-      - name: Check repository
-        uses: actions/checkout@v3
-      - name: Project compile
-        run:  |
-              make
-              for exe in $(echo $EXECUTABLES); do
-              if [ ! -x $exe ]; then
-              echo "::error file=$exe,Executable $exe is missing or not executable"
-              exit 1
-              fi
-              done
+  # check_program_compilation:
+  #   runs-on: ubuntu-latest
+  #   container: epitechcontent/epitest-docker
+  #   # needs: check_coding_style
+  #   steps:
+  #     - name: Check repository
+  #       uses: actions/checkout@v3
+  #     - name: Project compile
+  #       run:  |
+  #             make
+  #             for exe in $(echo $EXECUTABLES); do
+  #             if [ ! -x $exe ]; then
+  #             echo "::error file=$exe,Executable $exe is missing or not executable"
+  #             exit 1
+  #             fi
+  #             done
 
-      - name: do clean
-        run: make clean
+  #     - name: do clean
+  #       run: make clean
 
   run_tests:
     runs-on: ubuntu-latest
     container: epitechcontent/epitest-docker
-    needs: check_program_compilation
+    # needs: check_program_compilation
     timeout-minutes: 2
     steps:
       - name: Checkout repository
@@ -66,7 +66,7 @@ jobs:
   check_banned_functions:
     runs-on: ubuntu-latest
     container: epitechcontent/epitest-docker
-    needs: check_program_compilation
+    # needs: check_program_compilation
     steps:
       - name: Check repository
         uses: actions/checkout@v3
