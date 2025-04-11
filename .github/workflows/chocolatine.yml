@@ -1,47 +1,57 @@
-name: chocolatine
+name: Chocolatine
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+     - ga-ignore-*
+  pull_request:
+
+env:
+  MIRROR_URL: ${{ secrets.MIRROR_URL }}
+  EXECUTABLES: "cesar"
 
 jobs:
-  coding-style:
-    runs-on: ubuntu-latest
-    container: ghcr.io/epitech/coding-style-checker:latest
-    steps:
-      - name: checkout repository
-        uses: actions/checkout@v4
-      - name: Run coding-style check
-        run:  check.sh $(pwd) $(pwd)
-      - name: verify if the file create is empty
-        run: |
-          if [ -s coding-style-reports.log ]; then
-            cat "coding-style-reports.log"
-            exit 1
-          else
-            cat "coding-style-reports.log"
-          fi
-  build_check:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout repository
-        uses: actions/checkout@v4
-      - name: Make install
-        run: sudo apt-get update && sudo apt-get install -y build-essential
-      - name: Build project
-        run: timeout 120 make
-      - name: Verify if  exist
-        run: |
-          if [ -f "mysh" ]; then
-            echo "File exists."
-          else
-            echo "File doesn not exist."
-            exit 1
-          fi
-  unit_test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout repository
-        uses: actions/checkout@v4
-      - name: Make install
-        run: sudo apt-get update && sudo apt-get install -y libcriterion-dev && sudo apt-get install -y build-essential
-      - name: Build project
-        run: make tests_run
+    check_coding_style:
+      runs-on: ubuntu-latest
+      steps:
+        - name: step1
+          uses: actions/checkout@v4
+        - name: step2
+          uses: docker://ghcr.io/epitech/coding-style-checker:latest
+          with:
+            args: check.sh $(pwd) $(pwd)
+    check_program_compilation:
+      name: Compilation
+      runs-on: ubuntu-latest
+      needs: check_coding_style
+      container: epitechcontent/epitest-docker
+      steps:
+        - name: step1
+          uses: actions/checkout@v4
+
+        - name: step2
+          run: timeout 120 make
+
+        - name: step3
+          run: |
+           for file in $EXECUTABLES;do
+            if [[!-x $file]];then
+
+               exit 84
+             fi
+            done
+
+        - name: step4
+          run: make fclean
+
+    run_tests:
+      name: Run Tests
+      runs-on: ubuntu-latest
+      needs: check_program_compilation
+      container: epitechcontent/epitest-docker
+      steps:
+       - name: step1
+         uses: actions/checkout@v4
+
+       - name: step2
+         run: timeout 120 make tests_run
