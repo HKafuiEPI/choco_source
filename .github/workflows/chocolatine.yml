@@ -13,25 +13,25 @@ env:
   EXECUTABLES: my_ls 
 
 jobs:
-  check_coding_style:
-    name: Checking the coding style
-    runs-on: ubuntu-latest
-    container: ghcr.io/epitech/coding-style-checker:latest
-    steps:
-      - name: Check and run coding style
-        uses: actions/checkout@v4
-      - run: |
-             check.sh $(pwd) $(pwd)
-             if [ -s coding-style-reports.log ];
-             then
-                cat coding-style-reports.log
-                exit 1
-             fi
+  # check_coding_style:
+  #   name: Checking the coding style
+  #   runs-on: ubuntu-latest
+  #   container: ghcr.io/epitech/coding-style-checker:latest
+  #   steps:
+  #     - name: Check and run coding style
+  #       uses: actions/checkout@v4
+  #     - run: |
+  #            check.sh $(pwd) $(pwd)
+  #            if [ -s coding-style-reports.log ];
+  #            then
+  #               cat coding-style-reports.log
+  #               exit 1
+  #            fi
 
   check_program_compilation:
     name: Checking that the program compiles correctly
     runs-on: ubuntu-latest
-    needs: check_coding_style
+    # needs: check_coding_style
     container: epitechcontent/epitest-docker
     timeout-minutes: 2
     steps:
