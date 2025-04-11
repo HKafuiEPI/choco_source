@@ -1,57 +1,70 @@
-name: Chocolatine
+name: chocolatine
 
 on:
   push:
     branches-ignore:
-     - ga-ignore-*
+    - "ga-ignore-*"
   pull_request:
+    branches-ignore:
+    - "ga-ignore-*"
 
 env:
-  MIRROR_URL: ${{ secrets.MIRROR_URL }}
-  EXECUTABLES: "cesar"
+  EXECUTABLE: "./107transfer"
 
 jobs:
-    check_coding_style:
-      runs-on: ubuntu-latest
-      steps:
-        - name: step1
-          uses: actions/checkout@v4
-        - name: step2
-          uses: docker://ghcr.io/epitech/coding-style-checker:latest
-          with:
-            args: check.sh $(pwd) $(pwd)
-    check_program_compilation:
-      name: Compilation
-      runs-on: ubuntu-latest
-      needs: check_coding_style
-      container: epitechcontent/epitest-docker
-      steps:
-        - name: step1
-          uses: actions/checkout@v4
+  check_coding_style:
+    name: "coding-style-errors"
+    runs-on: ubuntu-latest
+    container: ghcr.io/epitech/coding-style-checker:latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Run coding style check script"
+        run: check.sh . .
 
-        - name: step2
-          run: timeout 120 make
+  check_program_compilation:
+    name: "check compilation"
+    needs: [check_coding_style]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/epitech/coding-style-checker:latest
+    steps:
+      - uses: actions/checkout@v3
 
-        - name: step3
-          run: |
-           for file in $EXECUTABLES;do
-            if [[!-x $file]];then
+      - name: "make"
+        run: |
+          make
+        timeout-minutes: 2
 
-               exit 84
-             fi
-            done
+      - name: "make clean"
+        run: |
+          make clean
+        timeout-minutes: 1
 
-        - name: step4
-          run: make fclean
+      - name: "make re"
+        run: |
+          make re
+        timeout-minutes: 3
 
-    run_tests:
-      name: Run Tests
-      runs-on: ubuntu-latest
-      needs: check_program_compilation
-      container: epitechcontent/epitest-docker
-      steps:
-       - name: step1
-         uses: actions/checkout@v4
+      - name: "make fclean"
+        run: |
+          make fclean 
+        timeout-minutes: 1
 
-       - name: step2
-         run: timeout 120 make tests_run
+      - name: "check program"
+        run: |
+          make
+          ./107transfer "0*1*2*3*4" "1" > file
+        timeout-minutes: 1
+
+  run_tests:
+    needs: [check_program_compilation]
+    name: "Runs tests"
+    runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker:latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: "run_tests"
+        run: make tests_run
+        timeout-minutes: 2
