@@ -1,70 +1,68 @@
-name: chocolatine
-
+name: Chocolatine
+ 
 on:
   push:
     branches-ignore:
-    - "ga-ignore-*"
+      - ga-ignore-*
   pull_request:
-    branches-ignore:
-    - "ga-ignore-*"
-
-env:
-  EXECUTABLE: "./107transfer"
-
+     branches-ignore:
+      - ga-ignore-*
 jobs:
   check_coding_style:
-    name: "coding-style-errors"
-    runs-on: ubuntu-latest
+    name: coding_style
+    runs-on: Ubuntu-latest
     container: ghcr.io/epitech/coding-style-checker:latest
     steps:
-      - uses: actions/checkout@v3
-      - name: "Run coding style check script"
-        run: check.sh . .
-
-  check_program_compilation:
-    name: "check compilation"
-    needs: [check_coding_style]
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/epitech/coding-style-checker:latest
+      - name: get code
+        uses: actions/checkout@v4
+ 
+      - name: checker
+        run: check.sh $(pwd) $(pwd)
+ 
+      - name: display error
+        run: |
+          if [ -f coding-style-reports.log]; then
+            while read -r line; do
+              echo "::error file=$(echo $line | cut -d' : ' -f1), lines=$(echo $line | cut -d':' -f2)::$line"
+           done < coding-style-reports.log
+          fi
+ 
+  Checking_that_the_program_compiles:
+    name: Compilation
+    runs-on: Ubuntu-latest
+    container: epitechcontent/epitest-docker
+    needs: check_coding_style
     steps:
-      - uses: actions/checkout@v3
-
-      - name: "make"
-        run: |
-          make
-        timeout-minutes: 2
-
-      - name: "make clean"
-        run: |
-          make clean
-        timeout-minutes: 1
-
-      - name: "make re"
-        run: |
-          make re
-        timeout-minutes: 3
-
-      - name: "make fclean"
-        run: |
-          make fclean 
-        timeout-minutes: 1
-
-      - name: "check program"
-        run: |
-          make
-          ./107transfer "0*1*2*3*4" "1" > file
-        timeout-minutes: 1
-
-  run_tests:
-    needs: [check_program_compilation]
-    name: "Runs tests"
-    runs-on: ubuntu-latest
-    container:
-      image: epitechcontent/epitest-docker:latest
-
+      - name: code
+        uses: actions/checkout@v4
+ 
+      - name: compiler
+        run: timeout 120s make
+ 
+      - name: nettoyer
+        run: make clean
+ 
+  Run_tests:
+    name: runnig
+    runs-on: Unbutu-latest
+    container: epitechcontent/epitest-docker
+    needs: Checking_that_the_program_compiles
     steps:
-      - uses: actions/checkout@v3
-      - name: "run_tests"
-        run: make tests_run
-        timeout-minutes: 2
+      - name: code
+        uses: actions/checkout@v4
+ 
+      - name: compiler
+        run: timeout 120s make tests_run
+ 
+  Pushing_to_the_mirror_repository:
+    name: pushing
+    runs-on: Ubuntu-latest
+    steps:
+      - name: code
+        uses: actions/checkout@v4
+ 
+      - name:
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GIT_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
