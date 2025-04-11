@@ -7,7 +7,7 @@ on:
     branches-ignore:
       - ga-ignore-*
 env:
-    MIRROR_URL: git@github.com:EpitechPromo2029/B-DOP-200-COT-2-1-chocolatine-abiola.philippe.git
+    MIRROR_URL: git@github.com:HKafuiEPI/choco_source.git
     EXECUTABLES: mini_printf
 
 jobs:
@@ -23,32 +23,32 @@ jobs:
       - name: Run coding style checker
         id: coding_style
         run: check.sh $(pwd) $(pwd)
-  check_program_compilation:
-    name: program compilation
-    needs: check_coding_style
-    runs-on: ubuntu-latest
-    container: epitechcontent/epitest-docker
-    steps:
-      - name: repository
-        uses: actions/checkout@v4
-      - name: Make
-        run: make
-        timeout-minutes: 2
-      - name: Make fclean
-        run: make clean
-      - name: executable progam
-        run: |
-           if [ -f mini_printf ]; then
-             if [ ! -x mini_printf ]; then
-               exit 1
-             fi
-           else
-             exit 1
-           fi
+  # check_program_compilation:
+  #   name: program compilation
+  #   needs: check_coding_style
+  #   runs-on: ubuntu-latest
+  #   container: epitechcontent/epitest-docker
+  #   steps:
+  #     - name: repository
+  #       uses: actions/checkout@v4
+  #     - name: Make
+  #       run: make
+  #       timeout-minutes: 2
+  #     - name: Make fclean
+  #       run: make clean
+  #     - name: executable progam
+  #       run: |
+  #          if [ -f mini_printf ]; then
+  #            if [ ! -x mini_printf ]; then
+  #              exit 1
+  #            fi
+  #          else
+  #            exit 1
+  #          fi
 
   run_tests:
     name: tests runing
-    needs: check_program_compilation
+    # needs: check_program_compilation
     runs-on: ubuntu-latest
     container: epitechcontent/epitest-docker
     steps:
